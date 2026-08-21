@@ -1,16 +1,20 @@
 (() => {
 	const settingsKey = 'heroGameSettings';
+	const musicTimeKey = 'heroGameMusicTime';
 	const rankingKey = 'heroGameRanking';
 	const historyKey = 'heroGameHistory';
-	const defaults = { musicOn: true, volume: 0.5, musicTime: 0 };
+	const defaults = { musicOn: true, volume: 0.5 };
 	const settings = { ...defaults, ...JSON.parse(localStorage.getItem(settingsKey) || '{}') };
+	const navigationType = performance.getEntriesByType('navigation')[0]?.type;
+	if (navigationType === 'reload') sessionStorage.removeItem(musicTimeKey);
+	const savedMusicTime = Number(sessionStorage.getItem(musicTimeKey) || 0);
 	const audio = document.createElement('audio');
 	audio.src = new URL('thunderstruck.mp3', document.currentScript.src).href;
 	audio.loop = true;
 	audio.autoplay = true;
 	audio.setAttribute('playsinline', '');
 	audio.volume = settings.volume;
-	audio.currentTime = settings.musicTime || 0;
+	audio.currentTime = savedMusicTime;
 	audio.preload = 'auto';
 	document.body.appendChild(audio);
 
@@ -81,16 +85,6 @@
 		}
 	};
 
-	document.addEventListener('visibilitychange', () => {
-		if (document.hidden) {
-			settings.musicTime = audio.currentTime;
-			saveSettings();
-		}
-	});
-	window.addEventListener('pagehide', () => {
-		settings.musicTime = audio.currentTime;
-		saveSettings();
-	});
 	document.addEventListener('pointerdown', tryPlayMusic, { once: true });
 	document.addEventListener('keydown', tryPlayMusic, { once: true });
 	document.querySelectorAll('a[href$="rank.html"]').forEach((link) => {
@@ -98,4 +92,7 @@
 	});
 	renderSettings();
 	tryPlayMusic();
+	window.addEventListener('pagehide', () => {
+		sessionStorage.setItem(musicTimeKey, String(audio.currentTime));
+	});
 })();
